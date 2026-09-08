@@ -25,7 +25,15 @@ export default function RooftopHologram({ towerId, label, color, position = [0, 
           <div
             onClick={(e) => {
               e.stopPropagation();
-              useGameStore.getState().openPanel();
+              if (activeSection === towerId) {
+                if (isPanelOpen) {
+                  useGameStore.getState().closePanel();
+                } else {
+                  useGameStore.getState().openPanel();
+                }
+              } else {
+                useGameStore.getState().startSwing(towerId);
+              }
             }}
             className="group cursor-pointer flex flex-col items-center justify-center p-3 rounded-xl border backdrop-blur-md transition-all duration-300 hover:scale-105"
             style={{
@@ -46,7 +54,7 @@ export default function RooftopHologram({ towerId, label, color, position = [0, 
               className="text-[9px] font-mono tracking-widest uppercase font-bold"
               style={{ color: hexColor }}
             >
-              // SECTOR ARCHIVE
+              {isCurrentTower ? '// SECTOR ARCHIVE' : '// ROOFTOP BEACON'}
             </span>
 
             {/* Main Section Header */}
@@ -63,7 +71,9 @@ export default function RooftopHologram({ towerId, label, color, position = [0, 
                 border: `1px solid ${hexColor}66`,
               }}
             >
-              {isCurrentTower && isPanelOpen ? 'CLOSE DATA' : 'ACCESS DATA ▶'}
+              {isCurrentTower
+                ? (isPanelOpen ? 'CLOSE DATA [X]' : 'ACCESS DATA ▶')
+                : 'SWING HERE 🕸'}
             </div>
           </div>
         </Html>

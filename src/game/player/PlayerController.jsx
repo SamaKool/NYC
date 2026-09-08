@@ -18,6 +18,7 @@ export default function PlayerController() {
   const playerPosition = useGameStore((s) => s.playerPosition);
   const swingTarget = useGameStore((s) => s.swingTarget);
   const gameState = useGameStore((s) => s.gameState);
+  const viewMode = useGameStore((s) => s.viewMode);
 
   // ─── SWING ANIMATION ──────────────────────────────────────────
   useGSAP(() => {
@@ -35,10 +36,60 @@ export default function PlayerController() {
       onComplete: () => {
         setAnchorPoint(null);
         activePathRef.current = null;
-        useGameStore.getState().endSwing();
-        setTimeout(() => {
-          useGameStore.getState().openPanel();
-        }, 300);
+        
+        if (pathData.crawlTarget) {
+          // Trigger Wall Crawl Animation
+          const ledgePos = new Vector3(pathData.landingPos.x, pathData.crawlTarget.y, pathData.landingPos.z);
+          const crawlPos = { ...pathData.landingPos };
+          
+          const crawlTl = gsap.timeline({
+            onUpdate: () => {
+               useGameStore.getState().updatePlayerPosition([crawlPos.x, crawlPos.y, crawlPos.z]);
+               if (groupRef.current) {
+                  groupRef.current.position.set(crawlPos.x, crawlPos.y, crawlPos.z);
+                  // Look at the center of the tower while crawling up
+                  groupRef.current.lookAt(pathData.crawlTarget.x, groupRef.current.position.y, pathData.crawlTarget.z);
+                  
+                  // Tilt to simulate climbing vertically in 3rd person
+                  if (crawlPos.y < pathData.crawlTarget.y - 0.1) {
+                      groupRef.current.rotation.x = -Math.PI / 4; 
+                  } else {
+                      groupRef.current.rotation.x = 0;
+                  }
+               }
+            },
+            onComplete: () => {
+               useGameStore.getState().endSwing();
+               setTimeout(() => {
+                 useGameStore.getState().openPanel();
+               }, 300);
+            }
+          });
+
+          // Step 1: crawl up to ledge
+          crawlTl.to(crawlPos, {
+            x: ledgePos.x,
+            y: ledgePos.y,
+            z: ledgePos.z,
+            duration: 0.5,
+            ease: 'power2.out'
+          });
+          
+          // Step 2: hop over ledge to center
+          crawlTl.to(crawlPos, {
+            x: pathData.crawlTarget.x,
+            y: pathData.crawlTarget.y,
+            z: pathData.crawlTarget.z,
+            duration: 0.3,
+            ease: 'power1.out'
+          });
+          
+        } else {
+          useGameStore.getState().endSwing();
+          setTimeout(() => {
+            useGameStore.getState().openPanel();
+          }, 300);
+        }
       }
     });
 
@@ -121,7 +172,7 @@ export default function PlayerController() {
 
   return (
     <>
-      <group ref={groupRef} position={playerPosition}>
+      <group ref={groupRef} position={playerPosition} visible={viewMode === 'third_person'}>
         <PlayerModel />
       </group>
       <WebLine anchorPoint={anchorPoint} />

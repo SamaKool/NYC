@@ -17,6 +17,7 @@ export const useGameStore = create(
     playerPosition: [...HERO.spawnPoint],
     playerRotation: [0, 0, 0],
     isGrounded: true,
+    viewMode: 'pov', // 'pov' (1st-person through Spider-Man's eyes) | 'third_person' (close chase cam)
 
     // ─── SWING ──────────────────
     swingTarget: null,
@@ -34,6 +35,29 @@ export const useGameStore = create(
       previousSection: get().activeSection,
       activeSection: targetTowerId,
     }),
+    startSwing: (targetTowerId) => {
+      const state = get();
+      if (state.isSwinging || state.gameState === GAME_STATE.FALLING) return;
+
+      // If already at this tower, don't swing! Just ensure panel is open.
+      if (state.activeSection === targetTowerId && state.gameState === GAME_STATE.IDLE_ROOFTOP) {
+        if (!state.isPanelOpen) {
+          set({ isPanelOpen: true });
+        }
+        return;
+      }
+
+      set({
+        swingTarget: targetTowerId,
+        swingProgress: 0,
+        isSwinging: true,
+        isPanelOpen: false,
+        gameState: GAME_STATE.SWINGING,
+        cameraMode: CAMERA_MODE.SWING_CAM,
+        previousSection: state.activeSection,
+        activeSection: targetTowerId,
+      });
+    },
 
     endSwing: () => set({
       swingTarget: null,
@@ -75,5 +99,7 @@ export const useGameStore = create(
     setGameState: (state) => set({ gameState: state }),
     setLoadProgress: (progress) => set({ loadProgress: progress }),
     updatePlayerPosition: (pos) => set({ playerPosition: pos }),
+    setViewMode: (mode) => set({ viewMode: mode }),
+    toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'pov' ? 'third_person' : 'pov' })),
   }))
 );

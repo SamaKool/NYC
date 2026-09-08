@@ -25,22 +25,28 @@ export default function Beacon({ towerId, label, color, position }) {
   });
 
   return (
-    <group position={position}>
-      {/* Clickable pulsing beacon core */}
-      <mesh
-        ref={meshRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          useGameStore.getState().startSwing(towerId);
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'pointer';
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = 'default';
-        }}
-      >
+    <group
+      position={position}
+      onClick={(e) => {
+        e.stopPropagation();
+        useGameStore.getState().startSwing(towerId);
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'default';
+      }}
+    >
+      {/* Generous invisible raycast hit sphere so clicks anywhere near beacon trigger swing */}
+      <mesh>
+        <sphereGeometry args={[5.0, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      {/* Pulsing beacon core */}
+      <mesh ref={meshRef}>
         <sphereGeometry args={[BEACON.RADIUS, 16, 16]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
@@ -64,4 +70,3 @@ export default function Beacon({ towerId, label, color, position }) {
     </group>
   );
 }
-

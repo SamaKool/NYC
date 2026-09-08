@@ -3,6 +3,7 @@ import Beacon from './Beacon.jsx';
 import RooftopProps from './RooftopProps.jsx';
 import RooftopHologram from './props/RooftopHologram.jsx';
 import { COLORS } from '../../config/constants.js';
+import { useGameStore } from '../../store/gameStore.js';
 
 // Shared module-level geometry and materials to eliminate duplicate GPU allocations
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
@@ -39,6 +40,17 @@ export default function SectionTower({ tower }) {
         geometry={UNIT_BOX}
         material={ROOF_MATERIAL}
         receiveShadow
+        onClick={(e) => {
+          e.stopPropagation();
+          useGameStore.getState().startSwing(id);
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'default';
+        }}
       />
 
       {/* Rooftop glowing parapet rim */}
@@ -46,6 +58,10 @@ export default function SectionTower({ tower }) {
         position={[0, height + 0.3, 0]}
         scale={[width + 0.2, 0.4, depth + 0.2]}
         geometry={UNIT_BOX}
+        onClick={(e) => {
+          e.stopPropagation();
+          useGameStore.getState().startSwing(id);
+        }}
       >
         <meshBasicMaterial color={beaconColor} wireframe toneMapped={false} />
       </mesh>

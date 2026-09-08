@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { CameraControls } from '@react-three/drei';
 import { MathUtils } from 'three';
 import { useGameStore } from '../../store/gameStore.js';
@@ -8,11 +8,76 @@ import { CAMERA_MODE, HERO, TOWERS, SWING } from '../../config/constants.js';
 export default function CameraController() {
   const controlsRef = useRef();
   const initializedRef = useRef(false);
-  const lastTargetKeyRef = useRef('ground');
+  const lastTargetKeyRef = useRef('');
+  const viewMode = useGameStore((s) => s.viewMode);
+  const { gl } = useThree();
 
+  // ─── FIRST-PERSON (POV) INTERACTION STATE ─────────────────────
+  const isDraggingRef = useRef(false);
+  const prevPointerRef = useRef({ x: 0, y: 0 });
+  const yawRef = useRef(0);
+  const pitchRef = useRef(0);
+  const targetYawRef = useRef(0);
+  const targetPitchRef = useRef(0);
+  const fovRef = useRef(60);
+
+  // ─── POINTER & WHEEL LISTENERS FOR FPV LOOK-AROUND ────────────
   useEffect(() => {
-    // Initial camera placement overlooking hero plaza if already mounted
-    if (controlsRef.current && !initializedRef.current) {
+    const domElement = gl.domElement;
+    if (!domElement) return;
+
+    const onPointerDown = (e) => {
+      if (useGameStore.getState().viewMode !== 'pov') return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDraggingRef.current = true;
+      prevPointerRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDraggingRef.current || useGameStore.getState().viewMode !== 'pov') return;
+      const dx = e.clientX - prevPointerRef.current.x;
+      const dy = e.clientY - prevPointerRef.current.y;
+      prevPointerRef.current = { x: e.clientX, y: e.clientY };
+
+      const sensitivity = 0.003;
+      targetYawRef.current -= dx * sensitivity;
+      targetPitchRef.current -= dy * sensitivity;
+
+      // Allow looking fully straight up into the sky and straight down at the ground
+      targetPitchRef.current = MathUtils.clamp(
+        targetPitchRef.current,
+        -Math.PI / 2 + 0.02,
+        Math.PI / 2 - 0.02
+      );
+    };
+
+    const onPointerUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    const onWheel = (e) => {
+      if (useGameStore.getState().viewMode !== 'pov') return;
+      // Wheel up (negative) zooms in, wheel down (positive) zooms out
+      // Clamp between 30 (zoomed in) and 60 (average eye view - cannot zoom out past this!)
+      fovRef.current = MathUtils.clamp(fovRef.current + e.deltaY * 0.04, 30, 60);
+    };
+
+    domElement.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    domElement.addEventListener('wheel', onWheel, { passive: true });
+
+    return () => {
+      domElement.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      domElement.removeEventListener('wheel', onWheel);
+    };
+  }, [gl]);
+
+  // Initial third-person camera placement
+  useEffect(() => {
+    if (controlsRef.current && !initializedRef.current && viewMode === 'third_person') {
       controlsRef.current.setLookAt(
         HERO.cameraStart[0],
         HERO.cameraStart[1],
@@ -24,93 +89,172 @@ export default function CameraController() {
       );
       initializedRef.current = true;
     }
-  }, []);
+  }, [viewMode]);
 
   useFrame((state) => {
-    if (!controlsRef.current) return;
+    const { cameraMode, activeSection, isSwinging, playerPosition, gameState } = useGameStore.getState();
 
-    // Guaranteed fallback if controls weren't ready on mount:
-    if (!initializedRef.current) {
-      controlsRef.current.setLookAt(
-        HERO.cameraStart[0],
-        HERO.cameraStart[1],
-        HERO.cameraStart[2],
-        HERO.cameraLookAt[0],
-        HERO.cameraLookAt[1],
-        HERO.cameraLookAt[2],
-        false
-      );
-      initializedRef.current = true;
-    }
+    // ─── 1. DYNAMIC FOV ZOOM & SPEED PULSE ───────────────────────
+    const targetFov = isSwinging
+      ? SWING.FOV_SWING_MAX
+      : viewMode === 'pov'
+      ? fovRef.current
+      : SWING.FOV_REST;
 
-    const { cameraMode, activeSection, isSwinging, playerPosition } = useGameStore.getState();
-
-    // ─── 1. DYNAMIC FOV SPEED PULSE ─────────────────────────────
-    const targetFov = isSwinging ? SWING.FOV_SWING_MAX : SWING.FOV_REST;
     if (Math.abs(state.camera.fov - targetFov) > 0.05) {
-      state.camera.fov = MathUtils.lerp(state.camera.fov, targetFov, 0.08);
+      state.camera.fov = MathUtils.lerp(state.camera.fov, targetFov, 0.1);
       state.camera.updateProjectionMatrix();
     }
 
-    // ─── 2. FREE-FALL CAMERA TRACKING ───────────────────────────
-    if (cameraMode === CAMERA_MODE.FALL_CAM) {
-      lastTargetKeyRef.current = 'falling';
-      controlsRef.current.setLookAt(
-        playerPosition[0] * 0.4,
-        playerPosition[1] + 8,
-        playerPosition[2] + 14,
-        playerPosition[0],
-        playerPosition[1],
-        playerPosition[2],
-        true
-      );
+    // ─── 2. ACTIVE SWING CAMERA ─────────────────────────────────
+    if (isSwinging) {
+      lastTargetKeyRef.current = 'swinging';
+      if (viewMode === 'pov') {
+        // First-Person: Camera locked to player's head looking forward
+        state.camera.position.set(
+          playerPosition[0],
+          playerPosition[1] + 0.4,
+          playerPosition[2]
+        );
+        state.camera.lookAt(
+          playerPosition[0],
+          playerPosition[1] + 0.3,
+          playerPosition[2] - 12
+        );
+        targetYawRef.current = state.camera.rotation.y;
+        targetPitchRef.current = state.camera.rotation.x;
+        yawRef.current = state.camera.rotation.y;
+        pitchRef.current = state.camera.rotation.x;
+      } else if (controlsRef.current) {
+        controlsRef.current.setLookAt(
+          playerPosition[0] * 0.9,
+          playerPosition[1] + 1.8,
+          playerPosition[2] + 4.5,
+          playerPosition[0],
+          playerPosition[1] + 0.5,
+          playerPosition[2] - 4,
+          false
+        );
+      }
       return;
     }
 
-    // ─── 3. TARGET-BASED ORBIT CONTROLS ─────────────────────────
-    let currentTargetKey = 'ground';
-    if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection) {
-      currentTargetKey = `rooftop_${activeSection}`;
+    // ─── 3. FREE-FALL DIVE CAMERA ───────────────────────────────
+    if (cameraMode === CAMERA_MODE.FALL_CAM || gameState === 'falling') {
+      lastTargetKeyRef.current = 'falling';
+      if (viewMode === 'pov') {
+        state.camera.position.set(
+          playerPosition[0],
+          playerPosition[1] + 0.2,
+          playerPosition[2]
+        );
+        state.camera.lookAt(HERO.spawnPoint[0], 0.5, HERO.spawnPoint[2]);
+        targetYawRef.current = state.camera.rotation.y;
+        targetPitchRef.current = state.camera.rotation.x;
+        yawRef.current = state.camera.rotation.y;
+        pitchRef.current = state.camera.rotation.x;
+      } else if (controlsRef.current) {
+        controlsRef.current.setLookAt(
+          playerPosition[0] * 0.8,
+          playerPosition[1] + 4.5,
+          playerPosition[2] + 5.5,
+          playerPosition[0],
+          playerPosition[1],
+          playerPosition[2],
+          false
+        );
+      }
+      return;
     }
 
-    // Only update camera lookAt when target has CHANGED, allowing free user orbit
+    // ─── 4. STATIC / IDLE TARGET TRANSITION ─────────────────────
+    let currentTargetKey = `${viewMode}_ground`;
+    if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection) {
+      currentTargetKey = `${viewMode}_rooftop_${activeSection}`;
+    }
+
     if (currentTargetKey !== lastTargetKeyRef.current) {
       lastTargetKeyRef.current = currentTargetKey;
 
       if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
         const tower = TOWERS[activeSection];
-        const targetY = tower.height + 2;
-        controlsRef.current.setLookAt(
-          tower.position[0],
-          targetY + tower.cameraOrbitHeight,
-          tower.position[2] + tower.cameraOrbitRadius,
-          tower.position[0],
-          targetY,
-          tower.position[2],
-          true
-        );
+        if (viewMode === 'pov') {
+          // Orient outwards towards the city skyline
+          targetYawRef.current = Math.atan2(-tower.position[0], -tower.position[2]);
+          targetPitchRef.current = -0.05;
+          yawRef.current = targetYawRef.current;
+          pitchRef.current = targetPitchRef.current;
+        } else if (controlsRef.current) {
+          controlsRef.current.setLookAt(
+            tower.position[0],
+            tower.height + 2.8,
+            tower.position[2] + 5.5,
+            tower.position[0],
+            tower.height + 1.5,
+            tower.position[2] - 2,
+            true
+          );
+        }
       } else {
-        // Return to ground overview
-        controlsRef.current.setLookAt(
-          HERO.cameraStart[0],
-          HERO.cameraStart[1],
-          HERO.cameraStart[2],
-          HERO.cameraLookAt[0],
-          HERO.cameraLookAt[1],
-          HERO.cameraLookAt[2],
-          true
-        );
+        // Ground Plaza
+        if (viewMode === 'pov') {
+          targetYawRef.current = 0;
+          targetPitchRef.current = 0.05;
+          yawRef.current = targetYawRef.current;
+          pitchRef.current = targetPitchRef.current;
+        } else if (controlsRef.current) {
+          controlsRef.current.setLookAt(
+            HERO.spawnPoint[0],
+            HERO.spawnPoint[1] + 1.8,
+            HERO.spawnPoint[2] + 5.0,
+            HERO.spawnPoint[0],
+            HERO.spawnPoint[1] + 1.0,
+            HERO.spawnPoint[2] - 4,
+            true
+          );
+        }
       }
+    }
+
+    // ─── 5. FPV PER-FRAME HEAD ORIENTATION ──────────────────────
+    if (viewMode === 'pov') {
+      // Smooth head rotation lerp
+      yawRef.current = MathUtils.lerp(yawRef.current, targetYawRef.current, 0.25);
+      pitchRef.current = MathUtils.lerp(pitchRef.current, targetPitchRef.current, 0.25);
+
+      let eyeX = playerPosition[0];
+      let eyeY = playerPosition[1] + 0.6;
+      let eyeZ = playerPosition[2];
+
+      if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
+        const tower = TOWERS[activeSection];
+        eyeX = tower.position[0];
+        eyeY = tower.height + 1.8;
+        eyeZ = tower.position[2] + 0.5;
+      } else if (!activeSection) {
+        eyeX = HERO.spawnPoint[0];
+        eyeY = HERO.spawnPoint[1] + 0.6;
+        eyeZ = HERO.spawnPoint[2];
+      }
+
+      // Camera position stays 100% stationary at eye level
+      state.camera.position.set(eyeX, eyeY, eyeZ);
+
+      // Rotate around the vertical Y axis (yaw) and horizontal X axis (pitch)
+      state.camera.rotation.order = 'YXZ';
+      state.camera.rotation.set(pitchRef.current, yawRef.current, 0);
     }
   });
 
   return (
     <CameraControls
       ref={controlsRef}
-      smoothTime={0.4}
-      minDistance={4}
-      maxDistance={120}
-      maxPolarAngle={Math.PI / 2 - 0.05}
+      enabled={viewMode === 'third_person'}
+      smoothTime={0.25}
+      minDistance={1.0}
+      maxDistance={80}
+      minPolarAngle={0}
+      maxPolarAngle={Math.PI}
     />
   );
 }
