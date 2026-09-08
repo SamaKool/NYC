@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Central Spider Body -->
+  <ellipse cx="50" cy="42" rx="7" ry="10" fill="#e23636" />
+  <ellipse cx="50" cy="62" rx="10" ry="16" fill="#e23636" />
+  
+  <!-- Head / Eyes -->
+  <polygon points="46,30 50,35 44,36" fill="#ffffff" />
+  <polygon points="54,30 50,35 56,36" fill="#ffffff" />
+
+  <!-- Spider Legs (Upper Left) -->
+  <path d="M 45 40 Q 25 15 15 28" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M 44 44 Q 18 30 10 48" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+  
+  <!-- Spider Legs (Lower Left) -->
+  <path d="M 44 58 Q 18 70 12 85" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M 46 64 Q 28 85 30 96" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+
+  <!-- Spider Legs (Upper Right) -->
+  <path d="M 55 40 Q 75 15 85 28" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M 56 44 Q 82 30 90 48" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+
+  <!-- Spider Legs (Lower Right) -->
+  <path d="M 56 58 Q 82 70 88 85" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M 54 64 Q 72 85 70 96" stroke="#e23636" stroke-width="3" stroke-linecap="round" fill="none" />
+</svg>
+
