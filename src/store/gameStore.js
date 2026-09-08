@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { GAME_STATE, CAMERA_MODE, HERO } from '../config/constants.js';
 
@@ -48,8 +48,12 @@ export const useGameStore = create(
       isGrounded: false,
       gameState: GAME_STATE.FALLING,
       cameraMode: CAMERA_MODE.FALL_CAM,
+      isGrounded: true,
+      gameState: GAME_STATE.IDLE_GROUND,
+      cameraMode: CAMERA_MODE.FOLLOW_GROUND,
       previousSection: get().activeSection,
       activeSection: null,
+      playerPosition: [...HERO.spawnPoint],
     }),
 
     land: () => set({

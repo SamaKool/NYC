@@ -6,10 +6,12 @@ import { CAMERA_MODE, HERO, TOWERS } from '../../config/constants.js';
 
 export default function CameraController() {
   const controlsRef = useRef();
+  const initializedRef = useRef(false);
+  const lastTargetKeyRef = useRef('ground');
 
   useEffect(() => {
-    // Initial camera placement overlooking hero plaza
-    if (controlsRef.current) {
+    // Initial camera placement overlooking hero plaza if already mounted
+    if (controlsRef.current && !initializedRef.current) {
       controlsRef.current.setLookAt(
         HERO.cameraStart[0],
         HERO.cameraStart[1],
@@ -19,13 +21,29 @@ export default function CameraController() {
         HERO.cameraLookAt[2],
         false
       );
+      initializedRef.current = true;
     }
   }, []);
 
   useFrame(() => {
-    const { cameraMode, activeSection, playerPosition } = useGameStore.getState();
-
     if (!controlsRef.current) return;
+
+    // Guaranteed fallback if controls weren't ready on mount:
+    if (!initializedRef.current) {
+      controlsRef.current.setLookAt(
+        HERO.cameraStart[0],
+        HERO.cameraStart[1],
+        HERO.cameraStart[2],
+        HERO.cameraLookAt[0],
+        HERO.cameraLookAt[1],
+        HERO.cameraLookAt[2],
+        false
+      );
+      initializedRef.current = true;
+    }
+
+    const { cameraMode, activeSection, playerPosition } = useGameStore.getState();
+    const { cameraMode, activeSection } = useGameStore.getState();
 
     if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
       const tower = TOWERS[activeSection];
@@ -49,6 +67,40 @@ export default function CameraController() {
         playerPosition[2],
         true
       );
+    // Determine current logical camera target
+    let currentTargetKey = 'ground';
+    if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection) {
+      currentTargetKey = `rooftop_${activeSection}`;
+    }
+
+    // Only update camera lookAt when target has CHANGED, so user can freely orbit!
+    if (currentTargetKey !== lastTargetKeyRef.current) {
+      lastTargetKeyRef.current = currentTargetKey;
+
+      if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
+        const tower = TOWERS[activeSection];
+        const targetY = tower.height + 2;
+        controlsRef.current.setLookAt(
+          tower.position[0],
+          targetY + tower.cameraOrbitHeight,
+          tower.position[2] + tower.cameraOrbitRadius,
+          tower.position[0],
+          targetY,
+          tower.position[2],
+          true
+        );
+      } else {
+        // Return to ground overview
+        controlsRef.current.setLookAt(
+          HERO.cameraStart[0],
+          HERO.cameraStart[1],
+          HERO.cameraStart[2],
+          HERO.cameraLookAt[0],
+          HERO.cameraLookAt[1],
+          HERO.cameraLookAt[2],
+          true
+        );
+      }
     }
   });
 

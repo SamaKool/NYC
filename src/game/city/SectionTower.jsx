@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import Beacon from './Beacon.jsx';
+import RooftopProps from './RooftopProps.jsx';
+import RooftopHologram from './props/RooftopHologram.jsx';
 import { COLORS } from '../../config/constants.js';
 
 // Shared module-level geometry and materials to eliminate duplicate GPU allocations
@@ -47,6 +49,19 @@ export default function SectionTower({ tower }) {
       >
         <meshBasicMaterial color={beaconColor} wireframe toneMapped={false} />
       </mesh>
+
+      {/* Rooftop Architectural Props (Water tanks, AC chillers, Antennas) */}
+      <group position={[0, height + 0.1, 0]}>
+        <RooftopProps tower={tower} />
+      </group>
+
+      {/* Interactive 3D Holographic Display */}
+      <RooftopHologram
+        towerId={id}
+        label={label}
+        color={beaconColor}
+        position={[0, height + 6.5, 0]}
+      />
 
       {/* Rooftop Navigation Beacon */}
       <Beacon

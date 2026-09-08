@@ -1,4 +1,4 @@
-﻿precision highp float;
+precision highp float;
 
 varying vec3 vWorldPosition;
 varying vec3 vLocalPosition;
@@ -53,27 +53,27 @@ void main() {
     float windowMask = isWindow.x * isWindow.y;
 
     float rnd = hash21(cellId + vec2(vSeed * 17.13, vSeed * 43.71));
-    float isLit = step(0.62, rnd);
+    float isLit = step(0.42, rnd);
 
     if (rnd > 0.95) {
         isLit *= step(0.3, sin(uTime * 4.0 + rnd * 60.0));
     }
 
-    vec3 windowColor = (rnd > 0.8) ? uCoolWindow : uWarmWindow;
-    if (rnd > 0.98) {
-        windowColor = uNeonColor2 * 2.5;
+    vec3 windowColor = (rnd > 0.75) ? uCoolWindow * 1.5 : uWarmWindow * 1.6;
+    if (rnd > 0.96) {
+        windowColor = uNeonColor2 * 3.0;
     }
 
-    vec3 unlitGlass = vec3(0.03, 0.05, 0.09);
+    vec3 unlitGlass = vec3(0.04, 0.06, 0.11);
     vec3 finalColor = uWallColor;
 
     if (windowMask > 0.5) {
         finalColor = mix(unlitGlass, windowColor, isLit);
     } else {
-        if (vLocalPosition.y > 0.3 && (abs(vLocalPosition.x) > 0.48 || abs(vLocalPosition.z) > 0.48)) {
-            if (hash21(vec2(vSeed, 88.0)) > 0.65) {
+        if (vLocalPosition.y > 0.2 && (abs(vLocalPosition.x) > 0.47 || abs(vLocalPosition.z) > 0.47)) {
+            if (hash21(vec2(vSeed, 88.0)) > 0.45) {
                 vec3 stripeNeon = (hash21(vec2(vSeed, 12.0)) > 0.5) ? uNeonColor1 : uNeonColor2;
-                finalColor = stripeNeon * 2.5;
+                finalColor = stripeNeon * 2.8;
             }
         }
     }

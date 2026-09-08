@@ -67,7 +67,6 @@ export default function CityGrid() {
     <instancedMesh
       ref={meshRef}
       args={[geometry, material, buildings.length]}
-      castShadow
       receiveShadow
     />
   );

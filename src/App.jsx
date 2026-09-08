@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import GameCanvas from './game/GameCanvas.jsx';
 import GameLoop from './game/GameLoop.jsx';
 import Lights from './game/Lights.jsx';
@@ -17,18 +18,20 @@ export default function App() {
     <div className="relative w-screen h-screen overflow-hidden bg-[#0a0e27]">
       {/* 3D Open World Canvas */}
       <GameCanvas>
-        <GameLoop />
-        <Lights />
-        <Skybox />
-        <CameraController />
-        <PlayerController />
-        <CityGrid />
-        <StreetLevel />
-        <HeroGround />
-        {TOWER_LIST.map((tower) => (
-          <SectionTower key={tower.id} tower={tower} />
-        ))}
-        <PostProcessing />
+        <Suspense fallback={null}>
+          <GameLoop />
+          <Lights />
+          <Skybox />
+          <CameraController />
+          <PlayerController />
+          <CityGrid />
+          <StreetLevel />
+          <HeroGround />
+          {TOWER_LIST.map((tower) => (
+            <SectionTower key={tower.id} tower={tower} />
+          ))}
+          <PostProcessing />
+        </Suspense>
       </GameCanvas>
 
       {/* Cyberpunk Spider-Man HUD Overlay */}

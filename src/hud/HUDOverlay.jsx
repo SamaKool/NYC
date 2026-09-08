@@ -26,6 +26,12 @@ export default function HUDOverlay() {
 
         {/* Quick Nav Bar */}
         <div className="flex gap-2 bg-[#0a0e27]/80 backdrop-blur-md border border-[#00f0ff]/20 p-2 rounded-lg">
+          <button
+            onClick={jumpOff}
+            className={"px-3 py-1 text-xs font-mono rounded transition-all " + (!activeSection ? "bg-[#00f0ff]/25 text-[#00f0ff] border border-[#00f0ff]/60 shadow-[0_0_10px_rgba(0,240,255,0.3)]" : "text-gray-400 hover:text-white hover:bg-white/10")}
+          >
+            GROUND PLAZA
+          </button>
           {TOWER_LIST.map((t) => (
             <button
               key={t.id}
@@ -38,9 +44,9 @@ export default function HUDOverlay() {
           {activeSection && (
             <button
               onClick={jumpOff}
-              className="px-3 py-1 text-xs font-mono rounded bg-[#ff1e42]/20 border border-[#ff1e42] text-[#ff1e42] hover:bg-[#ff1e42] hover:text-white transition-all"
+              className="px-3 py-1 text-xs font-mono rounded bg-[#ff1e42]/20 border border-[#ff1e42] text-[#ff1e42] hover:bg-[#ff1e42] hover:text-white transition-all shadow-[0_0_10px_rgba(255,30,66,0.3)]"
             >
-              JUMP OFF
+              JUMP OFF ↵
             </button>
           )}
         </div>

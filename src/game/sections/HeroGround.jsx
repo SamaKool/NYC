@@ -1,11 +1,30 @@
 import { Text } from '@react-three/drei';
 import { HERO, COLORS } from '../../config/constants.js';
+import { useGameStore } from '../../store/gameStore.js';
 
 export default function HeroGround() {
+  const jumpOff = useGameStore((s) => s.jumpOff);
+
   return (
     <group position={HERO.position}>
-      {/* Central circular plaza platform */}
-      <mesh position={[0, HERO.platformHeight / 2, 0]} receiveShadow>
+      {/* Central circular plaza platform - clickable to return to ground */}
+      <mesh
+        position={[0, HERO.platformHeight / 2, 0]}
+        receiveShadow
+        onClick={(e) => {
+          e.stopPropagation();
+          jumpOff();
+        }}
+        onPointerOver={(e) => {
+          if (useGameStore.getState().activeSection) {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'default';
+        }}
+      >
         <cylinderGeometry args={[HERO.radius, HERO.radius, HERO.platformHeight, 48]} />
         <meshStandardMaterial color={COLORS.PLAZA_FLOOR} roughness={0.6} metalness={0.4} />
       </mesh>
@@ -27,7 +46,6 @@ export default function HeroGround() {
         <Text
           fontSize={1.4}
           color="#00f0ff"
-          font="https://fonts.gstatic.com/s/orbitron/v31/yMJRMIlzdpvBhQQL_Qq7dy22.woff2"
           anchorX="center"
           anchorY="middle"
         >
