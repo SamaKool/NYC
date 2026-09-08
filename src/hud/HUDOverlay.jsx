@@ -1,6 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useGameStore } from '../store/gameStore.js';
 import { TOWERS, TOWER_LIST } from '../config/constants.js';
+import AboutPanel from './panels/AboutPanel.jsx';
+import SkillsPanel from './panels/SkillsPanel.jsx';
+import ProjectsPanel from './panels/ProjectsPanel.jsx';
+import ExperiencePanel from './panels/ExperiencePanel.jsx';
+import ContactPanel from './panels/ContactPanel.jsx';
 
 export default function HUDOverlay() {
   const isPanelOpen = useGameStore((s) => s.isPanelOpen);
@@ -93,51 +98,12 @@ export default function HUDOverlay() {
                 </button>
               </div>
             </div>
-
-            <div className="max-h-72 overflow-y-auto pr-2 text-sm text-gray-300 space-y-3">
-              {activeSection === 'about' && (
-                <div>
-                  <p className="text-base text-white font-semibold mb-2">Friendly Neighborhood Full-Stack Developer</p>
-                  <p>
-                    Passionate about crafting interactive web experiences, real-time 3D environments, and cutting-edge software.
-                    Armed with great power and great responsibility for clean architecture and pixel-perfect design.
-                  </p>
-                </div>
-              )}
-              {activeSection === 'skills' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-white/5 rounded border border-cyan-500/20">
-                    <div className="font-bold text-[#00f0ff] mb-1">Frontend Engineering</div>
-                    <div className="text-xs text-gray-400">React 19, Three.js, R3F, Tailwind CSS, GSAP, WebGL</div>
-                  </div>
-                  <div className="p-3 bg-white/5 rounded border border-cyan-500/20">
-                    <div className="font-bold text-[#00f0ff] mb-1">Backend & Cloud</div>
-                    <div className="text-xs text-gray-400">Node.js, Express, PostgreSQL, REST/GraphQL APIs</div>
-                  </div>
-                </div>
-              )}
-              {activeSection === 'projects' && (
-                <div className="space-y-2">
-                  <div className="p-3 bg-white/5 rounded border border-red-500/30">
-                    <div className="font-bold text-white">Interactive 3D Spider-Verse Portfolio</div>
-                    <div className="text-xs text-gray-400">Next-generation gamified portfolio built in R3F, React 19, and GLSL.</div>
-                  </div>
-                </div>
-              )}
-              {activeSection === 'experience' && (
-                <div className="space-y-2">
-                  <div className="border-l-2 border-[#00f0ff] pl-3 py-1">
-                    <div className="font-bold text-white">Full Stack Software Engineer</div>
-                    <div className="text-xs text-gray-400">Building ambitious interactive web applications and distributed architectures.</div>
-                  </div>
-                </div>
-              )}
-              {activeSection === 'contact' && (
-                <div>
-                  <p className="mb-2">Need a high-octane developer on your squad?</p>
-                  <p className="font-mono text-[#00f0ff]">Send a signal beacon to discuss collaborations or roles.</p>
-                </div>
-              )}
+            <div className="max-h-[65vh] overflow-y-auto pr-2 text-sm text-gray-300">
+              {activeSection === 'about' && <AboutPanel />}
+              {activeSection === 'skills' && <SkillsPanel />}
+              {activeSection === 'projects' && <ProjectsPanel />}
+              {activeSection === 'experience' && <ExperiencePanel />}
+              {activeSection === 'contact' && <ContactPanel />}
             </div>
           </motion.div>
         )}

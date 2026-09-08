@@ -1,8 +1,9 @@
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CameraControls } from '@react-three/drei';
+import { MathUtils } from 'three';
 import { useGameStore } from '../../store/gameStore.js';
-import { CAMERA_MODE, HERO, TOWERS } from '../../config/constants.js';
+import { CAMERA_MODE, HERO, TOWERS, SWING } from '../../config/constants.js';
 
 export default function CameraController() {
   const controlsRef = useRef();
@@ -25,7 +26,7 @@ export default function CameraController() {
     }
   }, []);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (!controlsRef.current) return;
 
     // Guaranteed fallback if controls weren't ready on mount:
@@ -42,38 +43,37 @@ export default function CameraController() {
       initializedRef.current = true;
     }
 
-    const { cameraMode, activeSection, playerPosition } = useGameStore.getState();
-    const { cameraMode, activeSection } = useGameStore.getState();
+    const { cameraMode, activeSection, isSwinging, playerPosition } = useGameStore.getState();
 
-    if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
-      const tower = TOWERS[activeSection];
-      const targetY = tower.height + 2;
+    // ─── 1. DYNAMIC FOV SPEED PULSE ─────────────────────────────
+    const targetFov = isSwinging ? SWING.FOV_SWING_MAX : SWING.FOV_REST;
+    if (Math.abs(state.camera.fov - targetFov) > 0.05) {
+      state.camera.fov = MathUtils.lerp(state.camera.fov, targetFov, 0.08);
+      state.camera.updateProjectionMatrix();
+    }
+
+    // ─── 2. FREE-FALL CAMERA TRACKING ───────────────────────────
+    if (cameraMode === CAMERA_MODE.FALL_CAM) {
+      lastTargetKeyRef.current = 'falling';
       controlsRef.current.setLookAt(
-        tower.position[0],
-        targetY + tower.cameraOrbitHeight,
-        tower.position[2] + tower.cameraOrbitRadius,
-        tower.position[0],
-        targetY,
-        tower.position[2],
-        true
-      );
-    } else if (cameraMode === CAMERA_MODE.FOLLOW_GROUND) {
-      controlsRef.current.setLookAt(
+        playerPosition[0] * 0.4,
+        playerPosition[1] + 8,
+        playerPosition[2] + 14,
         playerPosition[0],
-        playerPosition[1] + 5,
-        playerPosition[2] + 12,
-        playerPosition[0],
-        playerPosition[1] + 1.5,
+        playerPosition[1],
         playerPosition[2],
         true
       );
-    // Determine current logical camera target
+      return;
+    }
+
+    // ─── 3. TARGET-BASED ORBIT CONTROLS ─────────────────────────
     let currentTargetKey = 'ground';
     if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection) {
       currentTargetKey = `rooftop_${activeSection}`;
     }
 
-    // Only update camera lookAt when target has CHANGED, so user can freely orbit!
+    // Only update camera lookAt when target has CHANGED, allowing free user orbit
     if (currentTargetKey !== lastTargetKeyRef.current) {
       lastTargetKeyRef.current = currentTargetKey;
 
