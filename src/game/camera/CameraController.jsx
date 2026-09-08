@@ -92,7 +92,7 @@ export default function CameraController() {
   }, [viewMode]);
 
   useFrame((state) => {
-    const { cameraMode, activeSection, isSwinging, playerPosition, gameState } = useGameStore.getState();
+    const { cameraMode, activeSection, isSwinging, playerPosition, gameState, swingTarget } = useGameStore.getState();
 
     // ─── 1. DYNAMIC FOV ZOOM & SPEED PULSE ───────────────────────
     const targetFov = isSwinging
@@ -109,30 +109,51 @@ export default function CameraController() {
     // ─── 2. ACTIVE SWING CAMERA ─────────────────────────────────
     if (isSwinging) {
       lastTargetKeyRef.current = 'swinging';
+      const targetId = swingTarget || activeSection;
+      const targetTower = targetId && TOWERS[targetId] ? TOWERS[targetId] : null;
+
       if (viewMode === 'pov') {
-        // First-Person: Camera locked to player's head looking forward
+        // First-Person: Camera locked to player's head, looking directly at the destination beacon orb
         state.camera.position.set(
           playerPosition[0],
           playerPosition[1] + 0.4,
           playerPosition[2]
         );
-        state.camera.lookAt(
-          playerPosition[0],
-          playerPosition[1] + 0.3,
-          playerPosition[2] - 12
-        );
+        
+        let lookX = playerPosition[0];
+        let lookY = playerPosition[1] + 0.3;
+        let lookZ = playerPosition[2] - 12;
+        
+        if (targetTower) {
+          lookX = targetTower.position[0];
+          lookY = targetTower.height + 4; // Exact beacon orb coordinates
+          lookZ = targetTower.position[2];
+        }
+        
+        state.camera.lookAt(lookX, lookY, lookZ);
+        
         targetYawRef.current = state.camera.rotation.y;
         targetPitchRef.current = state.camera.rotation.x;
         yawRef.current = state.camera.rotation.y;
         pitchRef.current = state.camera.rotation.x;
       } else if (controlsRef.current) {
+        let lookX = playerPosition[0];
+        let lookY = playerPosition[1] + 0.5;
+        let lookZ = playerPosition[2] - 4;
+
+        if (targetTower) {
+          lookX = targetTower.position[0];
+          lookY = targetTower.height + 4;
+          lookZ = targetTower.position[2];
+        }
+
         controlsRef.current.setLookAt(
           playerPosition[0] * 0.9,
           playerPosition[1] + 1.8,
           playerPosition[2] + 4.5,
-          playerPosition[0],
-          playerPosition[1] + 0.5,
-          playerPosition[2] - 4,
+          lookX,
+          lookY,
+          lookZ,
           false
         );
       }
@@ -174,24 +195,33 @@ export default function CameraController() {
     }
 
     if (currentTargetKey !== lastTargetKeyRef.current) {
+      const cameFromSwing = lastTargetKeyRef.current === 'swinging';
       lastTargetKeyRef.current = currentTargetKey;
 
       if (cameraMode === CAMERA_MODE.FOLLOW_ROOFTOP && activeSection && TOWERS[activeSection]) {
         const tower = TOWERS[activeSection];
         if (viewMode === 'pov') {
-          // Orient outwards towards the city skyline
-          targetYawRef.current = Math.atan2(-tower.position[0], -tower.position[2]);
+          // Orient inwards towards the center of the map [0, y, 0]
+          targetYawRef.current = Math.atan2(tower.position[0], tower.position[2]);
           targetPitchRef.current = -0.05;
-          yawRef.current = targetYawRef.current;
-          pitchRef.current = targetPitchRef.current;
+          if (!cameFromSwing) {
+            yawRef.current = targetYawRef.current;
+            pitchRef.current = targetPitchRef.current;
+          }
         } else if (controlsRef.current) {
+          const dirX = -tower.position[0];
+          const dirZ = -tower.position[2];
+          const len = Math.hypot(dirX, dirZ) || 1;
+          const normX = dirX / len;
+          const normZ = dirZ / len;
+
           controlsRef.current.setLookAt(
-            tower.position[0],
-            tower.height + 2.8,
-            tower.position[2] + 5.5,
-            tower.position[0],
-            tower.height + 1.5,
-            tower.position[2] - 2,
+            tower.position[0] - normX * 4,
+            tower.height + 2.5,
+            tower.position[2] - normZ * 4,
+            0,
+            tower.height * 0.5,
+            0,
             true
           );
         }
@@ -218,9 +248,14 @@ export default function CameraController() {
 
     // ─── 5. FPV PER-FRAME HEAD ORIENTATION ──────────────────────
     if (viewMode === 'pov') {
-      // Smooth head rotation lerp
-      yawRef.current = MathUtils.lerp(yawRef.current, targetYawRef.current, 0.25);
-      pitchRef.current = MathUtils.lerp(pitchRef.current, targetPitchRef.current, 0.25);
+      // Smooth head rotation lerp with angle wrapping to prevent 360 spins
+      let diff = targetYawRef.current - yawRef.current;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      
+      const lerpSpeed = isDraggingRef.current ? 0.3 : 0.12;
+      yawRef.current += diff * lerpSpeed;
+      pitchRef.current = MathUtils.lerp(pitchRef.current, targetPitchRef.current, lerpSpeed);
 
       let eyeX = playerPosition[0];
       let eyeY = playerPosition[1] + 0.6;
@@ -230,7 +265,7 @@ export default function CameraController() {
         const tower = TOWERS[activeSection];
         eyeX = tower.position[0];
         eyeY = tower.height + 1.8;
-        eyeZ = tower.position[2] + 0.5;
+        eyeZ = tower.position[2];
       } else if (!activeSection) {
         eyeX = HERO.spawnPoint[0];
         eyeY = HERO.spawnPoint[1] + 0.6;
