@@ -1,6 +1,12 @@
-﻿import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
+import { Vector2 } from 'three';
 import { POST_PROCESSING } from '../config/constants.js';
+
+const CA_OFFSET = new Vector2(
+  POST_PROCESSING.CHROMATIC_OFFSET[0],
+  POST_PROCESSING.CHROMATIC_OFFSET[1]
+);
 
 export default function PostProcessing() {
   return (
@@ -17,10 +23,11 @@ export default function PostProcessing() {
         blendFunction={BlendFunction.NORMAL}
       />
       <ChromaticAberration
-        offset={POST_PROCESSING.CHROMATIC_OFFSET}
+        offset={CA_OFFSET}
         radialModulation
         modulationOffset={0.5}
       />
     </EffectComposer>
   );
 }
+

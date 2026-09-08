@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
+import { MathUtils } from 'three';
 import { BEACON } from '../../config/constants.js';
 import { useGameStore } from '../../store/gameStore.js';
 
@@ -10,7 +11,11 @@ export default function Beacon({ towerId, label, color, position }) {
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
-    const scale = THREE_lerp(BEACON.PULSE_SCALE_MIN, BEACON.PULSE_SCALE_MAX, (Math.sin(time * BEACON.PULSE_SPEED) + 1) / 2);
+    const scale = MathUtils.lerp(
+      BEACON.PULSE_SCALE_MIN,
+      BEACON.PULSE_SCALE_MAX,
+      (Math.sin(time * BEACON.PULSE_SPEED) + 1) / 2
+    );
     if (meshRef.current) {
       meshRef.current.scale.setScalar(scale);
     }
@@ -60,6 +65,3 @@ export default function Beacon({ towerId, label, color, position }) {
   );
 }
 
-function THREE_lerp(start, end, amt) {
-  return (1 - amt) * start + amt * end;
-}

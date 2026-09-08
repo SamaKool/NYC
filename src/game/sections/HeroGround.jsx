@@ -7,7 +7,7 @@ export default function HeroGround() {
       {/* Central circular plaza platform */}
       <mesh position={[0, HERO.platformHeight / 2, 0]} receiveShadow>
         <cylinderGeometry args={[HERO.radius, HERO.radius, HERO.platformHeight, 48]} />
-        <meshStandardMaterial color={0x0f172a} roughness={0.6} metalness={0.4} />
+        <meshStandardMaterial color={COLORS.PLAZA_FLOOR} roughness={0.6} metalness={0.4} />
       </mesh>
 
       {/* Cyberpunk neon ring around hero platform */}

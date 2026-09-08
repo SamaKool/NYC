@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import { AdditiveBlending } from 'three';
 import { COLORS, WORLD } from '../../config/constants.js';
 
 export default function StreetLevel() {
@@ -17,10 +17,11 @@ export default function StreetLevel() {
           color={COLORS.SODIUM_AMBER}
           transparent
           opacity={0.08}
-          blending={THREE.AdditiveBlending}
+          blending={AdditiveBlending}
           depthWrite={false}
         />
       </mesh>
     </group>
   );
 }
+

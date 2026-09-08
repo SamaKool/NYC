@@ -1,7 +1,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { generateBackgroundBuildings } from '../../config/buildings.js';
+import { BACKGROUND_BUILDINGS } from '../../config/buildings.js';
 import { COLORS } from '../../config/constants.js';
 
 import vertexShader from './shaders/building.vert.glsl?raw';
@@ -9,7 +9,7 @@ import fragmentShader from './shaders/building.frag.glsl?raw';
 
 export default function CityGrid() {
   const meshRef = useRef();
-  const buildings = useMemo(() => generateBackgroundBuildings(), []);
+  const buildings = BACKGROUND_BUILDINGS;
 
   const { geometry, material } = useMemo(() => {
     const geo = new THREE.BoxGeometry(1, 1, 1);

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // SPIDER-VERSE PORTFOLIO — SHARED CONSTANTS
 // Every component in the project MUST import from this file.
 // DO NOT hardcode colors, positions, or dimensions elsewhere.
@@ -28,6 +28,7 @@ export const COLORS = {
   WALL_DARK:        0x0a0d14,  // Dark concrete/glass wall base
   ROOF_CONCRETE:    0x111827,  // Rooftop floor
   METAL_DARK:       0x1c1f2e,  // Water tank / AC unit metal
+  PLAZA_FLOOR:      0x0f172a,  // Central circular plaza platform
 
   // HUD (CSS hex strings for Tailwind)
   HUD_BG:           '#0a0e27cc',  // Semi-transparent navy
