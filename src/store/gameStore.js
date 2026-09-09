@@ -5,13 +5,14 @@ import { GAME_STATE, CAMERA_MODE, HERO } from '../config/constants.js';
 export const useGameStore = create(
   subscribeWithSelector((set, get) => ({
     // ─── STATE ──────────────────
-    gameState: GAME_STATE.LOADING,
+    gameState: GAME_STATE.INTRO,
     cameraMode: CAMERA_MODE.CINEMATIC,
     activeSection: null,
     previousSection: null,
     isPanelOpen: false,
     loadProgress: 0,
     landingImpact: 0,
+    isAudioMuted: false,
 
     // ─── PLAYER ─────────────────
     playerPosition: [...HERO.spawnPoint],
@@ -25,19 +26,9 @@ export const useGameStore = create(
     isSwinging: false,
 
     // ─── ACTIONS ────────────────
-    startSwing: (targetTowerId) => set({
-      swingTarget: targetTowerId,
-      swingProgress: 0,
-      isSwinging: true,
-      isPanelOpen: false,
-      gameState: GAME_STATE.SWINGING,
-      cameraMode: CAMERA_MODE.SWING_CAM,
-      previousSection: get().activeSection,
-      activeSection: targetTowerId,
-    }),
     startSwing: (targetTowerId) => {
       const state = get();
-      if (state.isSwinging || state.gameState === GAME_STATE.FALLING) return;
+      if (state.isSwinging || state.gameState === GAME_STATE.FALLING || state.gameState === GAME_STATE.INTRO) return;
 
       // If already at this tower, don't swing! Just ensure panel is open.
       if (state.activeSection === targetTowerId && state.gameState === GAME_STATE.IDLE_ROOFTOP) {
@@ -94,6 +85,16 @@ export const useGameStore = create(
       }, 400);
     },
 
+    skipIntro: () => set({
+      gameState: GAME_STATE.IDLE_GROUND,
+      cameraMode: CAMERA_MODE.FOLLOW_GROUND,
+    }),
+
+    endIntro: () => set({
+      gameState: GAME_STATE.IDLE_GROUND,
+      cameraMode: CAMERA_MODE.FOLLOW_GROUND,
+    }),
+
     openPanel: () => set({ isPanelOpen: true }),
     closePanel: () => set({ isPanelOpen: false }),
     setGameState: (state) => set({ gameState: state }),
@@ -101,5 +102,6 @@ export const useGameStore = create(
     updatePlayerPosition: (pos) => set({ playerPosition: pos }),
     setViewMode: (mode) => set({ viewMode: mode }),
     toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'pov' ? 'third_person' : 'pov' })),
+    toggleAudio: () => set((s) => ({ isAudioMuted: !s.isAudioMuted })),
   }))
 );

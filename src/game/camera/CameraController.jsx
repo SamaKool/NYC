@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { CameraControls } from '@react-three/drei';
 import { MathUtils } from 'three';
 import { useGameStore } from '../../store/gameStore.js';
-import { CAMERA_MODE, HERO, TOWERS, SWING } from '../../config/constants.js';
+import { CAMERA_MODE, HERO, TOWERS, SWING, GAME_STATE } from '../../config/constants.js';
 
 export default function CameraController() {
   const controlsRef = useRef();
@@ -94,6 +94,12 @@ export default function CameraController() {
   useFrame((state) => {
     const { cameraMode, activeSection, isSwinging, playerPosition, gameState, swingTarget } = useGameStore.getState();
 
+    // ─── 0. CINEMATIC INTRO FLY-IN ──────────────────────────────
+    if (gameState === GAME_STATE.INTRO || cameraMode === CAMERA_MODE.CINEMATIC) {
+      lastTargetKeyRef.current = 'intro';
+      return;
+    }
+
     // ─── 1. DYNAMIC FOV ZOOM & SPEED PULSE ───────────────────────
     const targetFov = isSwinging
       ? SWING.FOV_SWING_MAX
@@ -119,19 +125,19 @@ export default function CameraController() {
           playerPosition[1] + 0.4,
           playerPosition[2]
         );
-        
+
         let lookX = playerPosition[0];
         let lookY = playerPosition[1] + 0.3;
         let lookZ = playerPosition[2] - 12;
-        
+
         if (targetTower) {
           lookX = targetTower.position[0];
           lookY = targetTower.height + 4; // Exact beacon orb coordinates
           lookZ = targetTower.position[2];
         }
-        
+
         state.camera.lookAt(lookX, lookY, lookZ);
-        
+
         targetYawRef.current = state.camera.rotation.y;
         targetPitchRef.current = state.camera.rotation.x;
         yawRef.current = state.camera.rotation.y;
@@ -252,7 +258,7 @@ export default function CameraController() {
       let diff = targetYawRef.current - yawRef.current;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      
+
       const lerpSpeed = isDraggingRef.current ? 0.3 : 0.12;
       yawRef.current += diff * lerpSpeed;
       pitchRef.current = MathUtils.lerp(pitchRef.current, targetPitchRef.current, lerpSpeed);
